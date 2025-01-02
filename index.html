@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Pet Care</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1b2e 0%, #14151F 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background-color: #1C1D2A;
+            border-radius: 24px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #FF4D86;
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 4px rgba(255,77,134,0.2);
+        }
+
+        .subtitle {
+            color: #FF85A8;
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 24px;
+            opacity: 0.9;
+        }
+
+        .pet-container {
+            background: linear-gradient(145deg, #ffffff, #f8f8f8);
+            border-radius: 20px;
+            height: 220px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .sparkles-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .cat-icon {
+            width: 120px;
+            height: 120px;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.2));
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat {
+            background: linear-gradient(145deg, #262736, #2a2b3d);
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .stat-label {
+            color: #FF4D86;
+            margin-bottom: 8px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #FF4D86, #FF85A8);
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 4px;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        button {
+            background: linear-gradient(145deg, #FF4D86, #FF659B);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(255,77,134,0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,77,134,0.4);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .message {
+            text-align: center;
+            min-height: 24px;
+            margin-top: 16px;
+            color: #FF4D86;
+            font-size: 16px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.1); }
+        }
+
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(-8deg) scale(1.1); }
+            75% { transform: rotate(8deg) scale(1.1); }
+        }
+
+        @keyframes sparkle {
+            0% { transform: translate(0, 0) rotate(0deg) scale(0); opacity: 0; }
+            50% { transform: translate(var(--tx), var(--ty)) rotate(180deg) scale(1); opacity: 1; }
+            100% { transform: translate(calc(var(--tx) * 2), calc(var(--ty) * 2)) rotate(360deg) scale(0); opacity: 0; }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+            50% { transform: translateY(-40px) scale(1.2) rotate(var(--rotation)); opacity: 0.7; }
+            100% { transform: translateY(-80px) scale(0.5) rotate(calc(var(--rotation) * 2)); opacity: 0; }
+        }
+
+        .floating-emoji {
+            position: absolute;
+            font-size: 24px;
+            animation: float 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            pointer-events: none;
+            --rotation: 0deg;
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #ffeb3b, transparent);
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            --tx: 0px;
+            --ty: 0px;
+            animation: sparkle 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .cat-bounce {
+            animation: bounce 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        .cat-wiggle {
+            animation: wiggle 0.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        .sleeping {
+            filter: brightness(0.8);
+        }
+
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 16px;
+            }
+
+            .pet-container {
+                height: 180px;
+            }
+
+            .cat-icon {
+                width: 100px;
+                height: 100px;
+            }
+
+            button {
+                padding: 14px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Virtual Pet Care</h1>
+        <div class="subtitle">Made for you Nich -.-</div>
+        
+        <div class="pet-container">
+            <div class="sparkles-container"></div>
+            <svg class="cat-icon" viewBox="0 0 100 100">
+                <!-- Head - super round -->
+                <circle cx="50" cy="50" r="35" fill="#FFB74D"/>
+                
+                <!-- Ears - extra cute -->
+                <path d="M32,25 Q42,15 50,25 L41,25 Z" fill="#FFA726"/>
+                <path d="M68,25 Q58,15 50,25 L59,25 Z" fill="#FFA726"/>
+                
+                <!-- Inner Ears - pink -->
+                <path d="M35,23 Q42,18 45,23 L40,23 Z" fill="#FFB7B7"/>
+                <path d="M65,23 Q58,18 55,23 L60,23 Z" fill="#FFB7B7"/>
+                
+                <!-- Eyes - super big and sparkly -->
+                <g class="eyes">
+                    <!-- Left eye -->
+                    <circle cx="40" cy="45" r="8" fill="#000000"/>
+                    <circle cx="43" cy="42" r="3" fill="#FFFFFF"/>
+                    <circle cx="38" cy="47" r="1.5" fill="#FFFFFF"/>
+                    
+                    <!-- Right eye -->
+                    <circle cx="60" cy="45" r="8" fill="#000000"/>
+                    <circle cx="63" cy="42" r="3" fill="#FFFFFF"/>
+                    <circle cx="58" cy="47" r="1.5" fill="#FFFFFF"/>
+                </g>
+                
+                <!-- Cheeks - pinker and rounder -->
+                <circle cx="30" cy="55" r="6" fill="#FFB7B7" opacity="0.7"/>
+                <circle cx="70" cy="55" r="6" fill="#FFB7B7" opacity="0.7"/>
+                
+                <!-- Nose - heart shaped -->
+                <path d="M48,53 Q50,55 52,53 T56,53 Q56,58 50,60 Q44,58 44,53 T48,53" fill="#FF69B4"/>
+                
+                <!-- Mouth - sweet curve -->
+                <path d="M44,62 Q50,69 56,62" stroke="#FF69B4" fill="none" stroke-width="3" stroke-linecap="round"/>
+                
+                <!-- Whiskers - delicate curves -->
+                <g stroke="#FFA726" stroke-width="1.2" stroke-linecap="round">
+                    <path d="M22,48 Q28,50 34,48"/>
+                    <path d="M23,55 Q29,57 35,55"/>
+                    <path d="M24,62 Q30,60 36,58"/>
+                    
+                    <path d="M78,48 Q72,50 66,48"/>
+                    <path d="M77,55 Q71,57 65,55"/>
+                    <path d="M76,62 Q70,60 64,58"/>
+                </g>
+            </svg>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Happiness</div>
+                <div class="stat-value" id="happiness">100%</div>
+                <div class="progress-bar">
+                    <div class="progress" id="happiness-bar" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Energy</div>
+                <div class="stat-value" id="energy">100%</div>
+                <div class="progress-bar">
+                    <div class="progress" id="energy-bar" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button onclick="feed()">Feed 🍪</button>
+            <button onclick="play()">Play 🎾</button>
+            <button onclick="sleep()">Sleep 💤</button>
+            <button onclick="pet()">Pet 🫳</button>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        const cat = document.querySelector('.cat-icon');
+        const messageEl = document.getElementById('message');
+        const sparklesContainer = document.querySelector('.sparkles-container');
+        let happiness = 100;
+        let energy = 100;
+        let isSleeping = false;
+        let lastAction = Date.now();
+
+        const emojis = ['💖', '💝', '💕', '🌸', '✨', '⭐', '🌟', '🦋', '🍬', '🎀'];
+        
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            sparkle.style.left = x + 'px';
+            sparkle.style.top = y + 'px';
+            sparkle.style.setProperty('--tx', (Math.random() * 100 - 50) + 'px');
+            sparkle.style.setProperty('--ty', (Math.random() * 100 - 50) + 'px');
+            sparklesContainer.appendChild(sparkle);
+            setTimeout(() => sparkle.remove(), 1500);
+        }
+
+        function createFloatingEmoji(x, y) {
+            const emoji = document.createElement('div');
+            emoji.className = 'floating-emoji';
+            emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            emoji.style.left = x + 'px';
+            emoji.style.top = y + 'px';
+            emoji.style.setProperty('--rotation', (Math.random() * 360) + 'deg');
+            sparklesContainer.appendChild(emoji);
+            setTimeout(() => emoji.remove(), 2000);
+        }
+
+        function burstEffect(x, y, count = 8) {
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    const angle = (i / count) * 2 * Math.PI;
+                    const distance = 40;
+                    const newX = x + Math.cos(angle) * distance;
+                    const newY = y + Math.sin(angle) * distance;
+                    createSparkle(newX, newY);
+                    if (i % 2 === 0) {
+                        createFloatingEmoji(newX, newY);
+                    }
+                }, i * 100);
+            }
+        }
+
+                const cuteMessages = {
+            feed: [
+                "Nom nom... so yummy! 🍪",
+                "Munch munch... delicious! 🍡",
+                "Such tasty treats! ✨",
+                "More snacks please! 🌸",
+                "Yummy in my tummy! 🍯"
+            ],
+            play: [
+                "Wheee! So much fun! 🎈",
+                "Let's play forever! ⭐",
+                "Play time is the best! 🎾",
+                "Bouncing with joy! 🌟",
+                "So happy to play! 🦋"
+            ],
+            sleep: [
+                "Sweet dreams... 💫",
+                "Nighty night... 🌙",
+                "Sleepy kitty... 💝",
+                "Time for dreaming... ✨",
+                "Cozy and comfy... 🌸"
+            ],
+            pet: [
+                "Purr purr... so nice! 💗",
+                "More pets please! 🌸",
+                "This feels wonderful! ✨",
+                "So relaxing... 💝",
+                "The best pets ever! 🎀"
+            ]
+        };
+
+        function getRandomMessage(type) {
+            const messages = cuteMessages[type];
+            return messages[Math.floor(Math.random() * messages.length)];
+        }
+
+        function updateStats() {
+            document.getElementById('happiness').textContent = happiness + '%';
+            document.getElementById('energy').textContent = energy + '%';
+            
+            document.getElementById('happiness-bar').style.width = happiness + '%';
+            document.getElementById('energy-bar').style.width = energy + '%';
+
+            // Visual feedback based on stats
+            if (happiness < 30 || energy < 30) {
+                cat.style.transform = 'scale(0.95)';
+                cat.style.filter = 'brightness(0.8)';
+            } else {
+                cat.style.transform = 'scale(1)';
+                cat.style.filter = 'brightness(1)';
+            }
+        }
+
+        function showMessage(text) {
+            messageEl.style.opacity = '0';
+            setTimeout(() => {
+                messageEl.textContent = text;
+                messageEl.style.opacity = '1';
+            }, 300);
+        }
+
+        function decreaseStats() {
+            const now = Date.now();
+            const timePassed = now - lastAction;
+            
+            if (timePassed > 5000) {
+                if (!isSleeping) {
+                    happiness = Math.max(0, happiness - 5);
+                    energy = Math.max(0, energy - 3);
+                } else {
+                    energy = Math.min(100, energy + 5);
+                }
+                updateStats();
+                lastAction = now;
+            }
+        }
+
+        function feed() {
+            if (isSleeping) {
+                showMessage('Shh... sweet dreams... 😴');
+                return;
+            }
+            if (energy < 100) {
+                energy = Math.min(100, energy + 15);
+                happiness = Math.min(100, happiness + 5);
+                updateStats();
+                showMessage(getRandomMessage('feed'));
+                
+                // Feeding animation
+                cat.classList.add('cat-wiggle');
+                setTimeout(() => cat.classList.remove('cat-wiggle'), 500);
+                
+                // Burst effect
+                const rect = cat.getBoundingClientRect();
+                burstEffect(rect.left + rect.width/2, rect.top + rect.height/2, 6);
+            } else {
+                showMessage('Too full for treats! 🙂');
+            }
+        }
+
+        function play() {
+            if (isSleeping) {
+                showMessage('Shh... sweet dreams... 😴');
+                return;
+            }
+            if (energy < 20) {
+                showMessage('Too tired to play... 😫');
+                return;
+            }
+            happiness = Math.min(100, happiness + 15);
+            energy = Math.max(0, energy - 20);
+            updateStats();
+            showMessage(getRandomMessage('play'));
+            
+            // Play animation
+            cat.classList.add('cat-bounce');
+            setTimeout(() => cat.classList.remove('cat-bounce'), 1000);
+            
+            // Multiple burst effects
+            const rect = cat.getBoundingClientRect();
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    burstEffect(
+                        rect.left + rect.width * Math.random(),
+                        rect.top + rect.height * Math.random(),
+                        8
+                    );
+                }, i * 300);
+            }
+        }
+
+        function sleep() {
+            isSleeping = !isSleeping;
+            const eyes = document.querySelectorAll('.cat-icon .eyes circle');
+            if (isSleeping) {
+                eyes.forEach(eye => {
+                    if (eye.getAttribute('r') > 2) {
+                        eye.setAttribute('ry', '1');
+                        eye.setAttribute('rx', '8');
+                    }
+                });
+                cat.classList.add('sleeping');
+                showMessage(getRandomMessage('sleep'));
+            } else {
+                eyes.forEach(eye => {
+                    if (eye.getAttribute('r') > 2) {
+                        eye.setAttribute('ry', '8');
+                        eye.setAttribute('rx', '8');
+                    }
+                });
+                cat.classList.remove('sleeping');
+                showMessage('Good morning! 🌞');
+            }
+            
+            // Sleep transition effect
+            const rect = cat.getBoundingClientRect();
+            burstEffect(rect.left + rect.width/2, rect.top + rect.height/2, 12);
+        }
+
+        function pet() {
+            if (isSleeping) {
+                showMessage('Shh... sweet dreams... 😴');
+                return;
+            }
+            happiness = Math.min(100, happiness + 10);
+            updateStats();
+            showMessage(getRandomMessage('pet'));
+            
+            // Petting animation
+            cat.classList.add('cat-wiggle');
+            setTimeout(() => cat.classList.remove('cat-wiggle'), 500);
+            
+            // Continuous burst effects
+            const rect = cat.getBoundingClientRect();
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    burstEffect(
+                        rect.left + rect.width * Math.random(),
+                        rect.top + rect.height * Math.random(),
+                        6
+                    );
+                }, i * 200);
+            }
+        }
+
+        // Add hover animation
+        cat.addEventListener('mouseover', () => {
+            if (!isSleeping && !cat.classList.contains('cat-bounce') && !cat.classList.contains('cat-wiggle')) {
+                cat.classList.add('cat-bounce');
+            }
+        });
+
+        cat.addEventListener('mouseout', () => {
+            if (!isSleeping) {
+                cat.classList.remove('cat-bounce');
+            }
+        });
+
+        // Add click interaction for mobile
+        cat.addEventListener('click', () => {
+            if (!isSleeping && !cat.classList.contains('cat-bounce')) {
+                cat.classList.add('cat-bounce');
+                setTimeout(() => cat.classList.remove('cat-bounce'), 1000);
+                
+                const rect = cat.getBoundingClientRect();
+                burstEffect(rect.left + rect.width/2, rect.top + rect.height/2, 8);
+            }
+        });
+
+        // Initialize random sparkles
+        function createRandomSparkle() {
+            if (!isSleeping && (happiness > 50 || energy > 50)) {
+                const rect = cat.getBoundingClientRect();
+                const x = rect.left + Math.random() * rect.width;
+                const y = rect.top + Math.random() * rect.height;
+                createSparkle(x, y);
+            }
+        }
+
+        // Create occasional sparkles
+        setInterval(createRandomSparkle, 3000);
+
+        // Start the game loop
+        setInterval(decreaseStats, 1000);
+        updateStats();
+
+    </script>
+</body>
+</html>
